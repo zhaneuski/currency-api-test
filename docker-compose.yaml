@@ -1,0 +1,54 @@
+version: "3.4"
+
+services:
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./:/var/www
+      - ./_docker/nginx/conf.d:/etc/nginx/conf.d
+    ports:
+      - 8876:80
+    depends_on:
+      - app
+    container_name: zhenevskiy_rest_api_nginx
+
+  app:
+    build:
+      context: .
+      dockerfile: _docker/app/Dockerfile
+
+    volumes:
+      - ./:/var/www
+
+    depends_on:
+      - db
+    container_name: zhenevskiy_rest_api
+
+    networks:
+      db-net:
+
+
+  db:
+    image: mysql:8.0
+    restart: always
+    volumes:
+      - ./tmp/db:/var/lib/mysql
+
+    environment:
+      MYSQL_DATABASE: restapi
+      MYSQL_ROOT_PASSWORD: root
+
+    networks:
+      db-net:
+        aliases:
+          - db
+
+    ports:
+      - 8202:3306
+
+    command: mysqld --character-set-server=utf8 --collation-server=utf8_unicode_ci
+    container_name: zhenevskiy_rest_api_db
+
+networks:
+  db-net:
+    name: api-db-net

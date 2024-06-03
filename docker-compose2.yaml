@@ -1,0 +1,169 @@
+version: "3.5"
+
+services:
+  db:
+    container_name: fp-db
+    image: mariadb:10.4.24
+    build: build/sql
+    volumes:
+      - './runtime/db/data:/var/lib/mysql'
+      - './runtime/db/mbackups:/mbackups'
+      - './runtime/db/logs:/var/log/mysql'
+    networks:
+      db-net:
+        aliases:
+          - db
+  rabbitmq:
+    container_name: fp-rabbitmq
+    env_file:
+      - './env/rabbitmq.env'
+    volumes:
+      - './runtime/rabbit/data:/var/lib/rabbitmq/mnesia/'
+    networks:
+      rabbitmq-net:
+        aliases:
+          - rabbitmq
+  redis:
+    container_name: fp-redis
+    image: redis:7.2-alpine
+    networks:
+      redis-net:
+        aliases:
+          - redis
+    volumes:
+      - './runtime/redis/data:/data'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 2m
+        max-file: 2
+  php:
+    container_name: fp-php
+    build:
+      context: build/php
+      target: common
+    image: foodpicasso-php
+    env_file:
+      - './env/db.env'
+      - './env/rabbitmq.env'
+    volumes:
+      - './runtime/php/logs:/var/log/php'
+    depends_on:
+      - db
+      - rabbitmq
+      - redis
+      - nodejs-courier
+      - nodejs-msn
+      - nodejs-pos
+    networks:
+      db-net:
+      rabbitmq-net:
+      redis-net:
+      nodejs-courier-net:
+      nodejs-msn-net:
+      nodejs-pos-net:
+      php-net:
+        aliases:
+          - php
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  nginx:
+    container_name: fp-nginx
+    build:
+      context: build/nginx
+      target: common
+    image: foodpicasso-nginx
+    depends_on:
+      - php
+      - nodejs-msn
+    networks:
+      nodejs-msn-net:
+      nodejs-pos-net:
+      php-net:
+  nodejs-courier:
+    container_name: fp-nodejs-courier
+    build:
+      context: build/nodejs
+      target: common
+    image: foodpicasso-nodejs
+    user: "node"
+    working_dir: /var/www/sites/node/courier
+    environment:
+      - NODE_ENV=production
+    expose:
+      - "3000"
+    command: "node main.js"
+    networks:
+      nodejs-courier-net:
+        aliases:
+          - nodejs_courier
+    volumes:
+      - './../../node/courier:/var/www/sites/node/courier'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 2m
+        max-file: 2
+  nodejs-msn:
+    container_name: fp-nodejs-msn
+    build:
+      context: build/nodejs
+      target: common
+    image: foodpicasso-nodejs
+    user: "node"
+    working_dir: /var/www/sites/node/msn
+    environment:
+      - NODE_ENV=production
+    expose:
+      - "8834"
+    command: "node index.js"
+    networks:
+      nodejs-msn-net:
+        aliases:
+          - nodejs_msn
+    volumes:
+      - './../../node/msn:/var/www/sites/node/msn'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 2m
+        max-file: 2
+  nodejs-pos:
+    container_name: fp-nodejs-pos
+    build:
+      context: build/nodejs
+      target: common
+    image: foodpicasso-nodejs
+    user: "node"
+    working_dir: /var/www/sites/node/pos
+    environment:
+      - NODE_ENV=production
+    expose:
+      - "8888"
+    command: "node main.js"
+    networks:
+      nodejs-pos-net:
+        aliases:
+          - nodejs_pos
+    volumes:
+      - './../../node/pos:/var/www/sites/node/pos'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 2m
+        max-file: 2
+networks:
+  php-net:
+    name: fp-php-net
+  db-net:
+    name: fp-db-net
+  rabbitmq-net:
+    name: fp-rabbitmq-net
+  redis-net:
+    name: fp-redis-net
+  nodejs-courier-net:
+    name: fp-nodejs-courier-net
+  nodejs-msn-net:
+    name: fp-nodejs-msn-net
+  nodejs-pos-net:
+    name: fp-nodejs-pos-net
