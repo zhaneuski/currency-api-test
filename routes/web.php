@@ -9,9 +9,13 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::match(['get', 'post'], '/currency/sync', SyncController::class)->name('currencySync');
-Route::match(['get', 'post'], '/currency/calculate', CalculateController::class)->name('currencyCalculate');
+// todo: Для тестов
+// Route::match(['get', 'post'], '/currency/sync', SyncController::class)->name('currencySync');
 
-Route::get('/currency/get', GetController::class)->name('admin.dashboard');
+// Роут для конвертации валюты.
+Route::post('/currency/calculate', CalculateController::class)->name('currencyCalculate');
+
+// Роут для получения актуальных курсов.
+Route::get('/currency/get', GetController::class)->name('currencyGet');
 
 

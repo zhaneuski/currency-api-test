@@ -1,0 +1,17 @@
+version: "3.4"
+
+services:
+  composer-app:
+    image: logserver-composer
+    build:
+      context: ./
+      target: composer
+    volumes:
+      - './../../../app:/var/www/site'
+  composer-database:
+    image: logserver-composer
+    build:
+      context: ./
+      target: composer
+    volumes:
+      - './../../../database:/var/www/site'
