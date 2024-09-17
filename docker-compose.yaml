@@ -42,10 +42,10 @@ services:
       MYSQL_DATABASE: restapi
       MYSQL_ROOT_PASSWORD: root
 
-#    networks:
-#      db-net:
-#        aliases:
-#          - db
+    networks:
+      db-net:
+        aliases:
+          - db
 
     ports:
       - 8202:3306
